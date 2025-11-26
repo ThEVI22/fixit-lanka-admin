@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react"; // Removed 'React' here to fix the error
 import { NavLink, useNavigate } from "react-router-dom";
 import { FiHome, FiFileText, FiUsers, FiSettings, FiLogOut } from "react-icons/fi";
 import { signOut } from "firebase/auth";
