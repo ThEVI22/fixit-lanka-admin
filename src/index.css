@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global app style to match your Flutter app vibe */
+body {
+  @apply bg-white text-black font-sans;
+}
