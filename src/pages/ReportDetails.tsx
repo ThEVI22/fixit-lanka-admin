@@ -1,5 +1,5 @@
 // ------------------------------------------------------
-// ReportDetails.tsx — Final (Uniform Black & White Button Styles)
+// ReportDetails.tsx — Final (ID moved below in Decline Modal)
 // ------------------------------------------------------
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -130,11 +130,11 @@ const ReportDetails: React.FC = () => {
       {/* --- DECLINE POPUP MODAL --- */}
       {isDeclineMode && (
         <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-[999] p-4">
-          <div className="bg-white p-8 rounded-3xl w-full max-w-[480px] text-center shadow-2xl border border-gray-100 transform transition-all scale-100 animate-fadeIn">
+          <div className="bg-white p-8 rounded-3xl w-full max-w-[420px] text-center shadow-2xl border border-gray-100 transform transition-all scale-100 animate-fadeIn">
             
             {/* Warning Icon */}
-            <div className="flex justify-center mb-6">
-              <div className="p-3 bg-red-50 text-red-600 rounded-full ring-8 ring-red-50/50">
+            <div className="flex justify-center mb-5">
+              <div className="p-4 bg-red-50 text-red-600 rounded-full ring-8 ring-red-50/50">
                 <HiOutlineExclamationCircle className="w-8 h-8" />
               </div>
             </div>
@@ -142,17 +142,20 @@ const ReportDetails: React.FC = () => {
             <h3 className="text-xl font-bold text-gray-900 mb-2">
               Confirm Report Decline
             </h3>
-            <p className="text-sm text-gray-500 mb-6 leading-relaxed px-4">
-              You are about to permanently decline report{" "}
-              <span className="font-semibold text-gray-900">
+            
+            {/* UPDATED: ID moved to new line below */}
+            <p className="text-sm text-gray-500 mb-6 text-center leading-relaxed">
+              You are about to permanently decline report:
+              <br />
+              <span className="font-bold text-gray-900 text-lg block mt-1 mb-1">
                 {report.adminReportId}
               </span>
-              . This action cannot be reversed.
+              This action cannot be reversed.
             </p>
 
             {/* Reason Text Area */}
             <div className="mb-6 text-left">
-              <label className="block text-xs font-semibold text-gray-700 mb-2 ml-1 uppercase tracking-wider">
+              <label className="block text-xs font-semibold text-gray-500 mb-2 ml-1 uppercase tracking-wider">
                 Reason for Rejection
               </label>
               <textarea
@@ -160,28 +163,29 @@ const ReportDetails: React.FC = () => {
                 placeholder="e.g. Duplicate report, Insufficient evidence..."
                 value={declineReason}
                 onChange={(e) => setDeclineReason(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl p-3 text-sm bg-gray-50 h-32 
-                           focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all 
+                className="w-full border border-gray-200 rounded-xl p-3 text-sm bg-gray-50 h-28 
+                           focus:ring-2 focus:ring-black/5 focus:border-black outline-none transition-all 
                            placeholder-gray-400 resize-none shadow-sm"
               />
             </div>
 
-            {/* Modal Actions - UPDATED BUTTON STYLES */}
+            {/* Modal Actions */}
             <div className="flex justify-center gap-3">
-              {/* Cancel Button - White Style */}
+              {/* Cancel Button */}
               <button
                 onClick={() => setIsDeclineMode(false)}
-                className="flex-1 px-4 py-2.5 text-sm rounded-lg border border-gray-300 bg-white text-gray-700 
-                           hover:bg-gray-50 transition-all font-semibold shadow-sm"
+                className="flex-1 py-3 text-sm font-medium rounded-xl border border-gray-300 bg-white text-gray-700 
+                           hover:bg-gray-50 transition active:scale-[0.97]"
               >
                 Cancel
               </button>
-              {/* Confirm Decline Button - Black Style */}
+              
+              {/* Confirm Decline Button */}
               <button
                 onClick={handleDecline}
                 disabled={!declineReason.trim()}
-                className="flex-1 px-4 py-2.5 text-sm rounded-lg bg-black text-white shadow-md
-                           hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold"
+                className="flex-1 py-3 text-sm font-semibold rounded-xl bg-black text-white shadow-md
+                           hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition active:scale-[0.97]"
               >
                 Confirm Decline
               </button>
@@ -221,25 +225,25 @@ const ReportDetails: React.FC = () => {
             </p>
           </div>
 
-          {/* Right: Actions (Black & White Buttons) - UPDATED STYLES */}
+          {/* Right: Actions */}
           <div className="flex items-center gap-3 mt-2">
             {/* ONLY SHOW BUTTONS IF STATUS IS "Submitted" */}
             {report.status === "Submitted" && (
               <>
-                {/* Decline Button (White Style) */}
+                {/* Decline Button */}
                 <button
                   onClick={() => setIsDeclineMode(true)}
-                  className="px-5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 
-                             shadow-sm hover:bg-gray-50 transition-all"
+                  className="px-6 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 
+                             shadow-sm hover:bg-gray-50 transition-all active:scale-[0.97]"
                 >
                   Decline
                 </button>
                 
-                {/* Approve Button (Black Style) */}
+                {/* Approve Button */}
                 <button
                   onClick={handleApprove}
-                  className="px-5 py-2.5 bg-black text-white rounded-lg text-sm font-semibold 
-                             shadow-md hover:bg-gray-800 transition-all transform active:scale-95"
+                  className="px-6 py-2.5 bg-black text-white rounded-lg text-sm font-semibold 
+                             shadow-md hover:opacity-90 transition-all active:scale-[0.97]"
                 >
                   Approve Report
                 </button>

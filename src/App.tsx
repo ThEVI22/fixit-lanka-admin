@@ -4,7 +4,7 @@ import DashboardLayout from "./layout/DashboardLayout";
 
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
-import Users from "./pages/Users";
+import Teams from "./pages/Teams"; // UPDATED: Import Teams
 import Settings from "./pages/Settings";
 import ReportDetails from "./pages/ReportDetails";
 import AdminLogin from "./pages/AdminLogin";
@@ -58,12 +58,13 @@ function App() {
             }
           />
 
+          {/* UPDATED: Route for Teams */}
           <Route
-            path="/users"
+            path="/teams"
             element={
               <ProtectedRoute>
                 <DashboardLayout>
-                  <Users />
+                  <Teams />
                 </DashboardLayout>
               </ProtectedRoute>
             }

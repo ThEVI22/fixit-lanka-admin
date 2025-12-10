@@ -1,4 +1,4 @@
-import { useState } from "react"; // Removed 'React' here to fix the error
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { FiHome, FiFileText, FiUsers, FiSettings, FiLogOut } from "react-icons/fi";
 import { signOut } from "firebase/auth";
@@ -25,11 +25,14 @@ const Sidebar = () => {
 
   return (
     <>
+      {/* FIXED: Removed 'fixed left-0 top-0 z-50' 
+         Reverted to standard flex column so it pushes the main content correctly.
+      */}
       <aside className="w-64 bg-white border-r border-slate-100 min-h-screen flex flex-col">
         
         {/* Brand */}
-        <div className="h-16 flex items-center px-6 -mt-px">
-          <span className="text-2xl font-semibold tracking-tight text-slate-900 -mt-1">
+        <div className="h-16 flex items-center px-6 -mt-px border-b border-slate-50/50">
+          <span className="text-2xl font-bold tracking-tight text-slate-900">
             Fixit Lanka
           </span>
         </div>
@@ -46,9 +49,10 @@ const Sidebar = () => {
             <span>Reports</span>
           </NavLink>
 
-          <NavLink to="/users" className={linkClasses}>
+          {/* UPDATED: Users -> Teams */}
+          <NavLink to="/teams" className={linkClasses}>
             <FiUsers size={18} />
-            <span>Users</span>
+            <span>Teams</span>
           </NavLink>
 
           <NavLink to="/settings" className={linkClasses}>
@@ -59,7 +63,7 @@ const Sidebar = () => {
           {/* Logout Button */}
           <button
             onClick={() => setShowLogout(true)}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors w-full"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors w-full mt-auto mb-6"
           >
             <FiLogOut size={18} />
             <span>Logout</span>
@@ -67,7 +71,7 @@ const Sidebar = () => {
         </nav>
 
         {/* Footer */}
-        <div className="px-6 py-4 text-xs text-slate-400">
+        <div className="px-6 py-4 text-xs text-slate-400 border-t border-slate-50">
           © {new Date().getFullYear()} Fixit Lanka
         </div>
       </aside>
