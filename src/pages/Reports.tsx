@@ -15,17 +15,19 @@ const statusColor: Record<string, string> = {
   Pending: "bg-amber-100 text-amber-700",
   "In-progress": "bg-blue-100 text-blue-700",
   Resolved: "bg-emerald-100 text-emerald-700",
-  // --- ADDED DECLINED STATUS COLOR ---
   Declined: "bg-red-100 text-red-700",
-  // -----------------------------------
+  "On-Hold": "bg-orange-100 text-orange-700", // Added just in case
 };
 
 const Reports: React.FC = () => {
   const navigate = useNavigate();
   const [reports, setReports] = useState<any[]>([]);
   const [search, setSearch] = useState("");
+  
+  // ✅ NEW: Track the Active Tab (Default: 'All')
+  const [activeTab, setActiveTab] = useState("All");
 
-  // Live updates (no refresh needed)
+  // Live updates
   useEffect(() => {
     const q = query(
       collection(db, "all_reports"),
@@ -51,19 +53,36 @@ const Reports: React.FC = () => {
     year: "numeric",
   });
 
-  // Search filter
+  // ✅ UPDATED FILTER LOGIC: (Search + Tab)
   const filteredReports = reports.filter((r) => {
+    // 1. Search Filter
     const s = search.toLowerCase();
-    return (
+    const matchesSearch = 
       (r.adminReportId || "").toLowerCase().includes(s) ||
       (r.category || "").toLowerCase().includes(s) ||
-      (r.description || "").toLowerCase().includes(s)
-    );
+      (r.description || "").toLowerCase().includes(s);
+
+    // 2. Tab Filter
+    let matchesTab = true;
+    if (activeTab === "Pending") matchesTab = r.status === "Pending";
+    else if (activeTab === "In-progress") matchesTab = r.status === "In-progress";
+    else if (activeTab === "Resolved") matchesTab = r.status === "Resolved";
+    
+    return matchesSearch && matchesTab;
   });
 
-  // Shorten long descriptions
   const shorten = (text: string = "") =>
     text.length > 40 ? text.slice(0, 40) + "..." : text;
+
+  // Helper to style tabs
+  const getTabClass = (tabName: string) => {
+    const isActive = activeTab === tabName;
+    return `cursor-pointer pb-1 transition-colors ${
+      isActive 
+        ? "font-medium text-black border-b-2 border-black" 
+        : "text-gray-500 hover:text-black"
+    }`;
+  };
 
   return (
     <div className="space-y-8">
@@ -77,11 +96,15 @@ const Reports: React.FC = () => {
         </p>
       </div>
 
-      {/* SUMMARY CARDS */}
+      {/* SUMMARY CARDS (Clickable to switch tabs quickly) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
         {/* Pending */}
-        <div className="flex items-center gap-4 bg-white p-5 shadow-sm border border-gray-100 rounded-2xl hover:shadow-md transition">
+        <div 
+          onClick={() => setActiveTab("Pending")}
+          className={`flex items-center gap-4 bg-white p-5 shadow-sm border rounded-2xl hover:shadow-md transition cursor-pointer
+            ${activeTab === "Pending" ? "border-amber-200 ring-1 ring-amber-100" : "border-gray-100"}`}
+        >
           <div className="p-3 bg-amber-100 text-amber-700 rounded-xl">
             <HiClock size={22} />
           </div>
@@ -95,7 +118,11 @@ const Reports: React.FC = () => {
         </div>
 
         {/* In-progress */}
-        <div className="flex items-center gap-4 bg-white p-5 shadow-sm border border-gray-100 rounded-2xl hover:shadow-md transition">
+        <div 
+          onClick={() => setActiveTab("In-progress")}
+          className={`flex items-center gap-4 bg-white p-5 shadow-sm border rounded-2xl hover:shadow-md transition cursor-pointer
+            ${activeTab === "In-progress" ? "border-blue-200 ring-1 ring-blue-100" : "border-gray-100"}`}
+        >
           <div className="p-3 bg-blue-100 text-blue-700 rounded-xl">
             <HiClipboardList size={22} />
           </div>
@@ -109,7 +136,11 @@ const Reports: React.FC = () => {
         </div>
 
         {/* Resolved */}
-        <div className="flex items-center gap-4 bg-white p-5 shadow-sm border border-gray-100 rounded-2xl hover:shadow-md transition">
+        <div 
+          onClick={() => setActiveTab("Resolved")}
+          className={`flex items-center gap-4 bg-white p-5 shadow-sm border rounded-2xl hover:shadow-md transition cursor-pointer
+            ${activeTab === "Resolved" ? "border-emerald-200 ring-1 ring-emerald-100" : "border-gray-100"}`}
+        >
           <div className="p-3 bg-emerald-100 text-emerald-700 rounded-xl">
             <HiCheckCircle size={22} />
           </div>
@@ -129,12 +160,30 @@ const Reports: React.FC = () => {
         {/* TABS + SEARCH */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50">
           <div className="flex items-center gap-6 text-sm">
-            <span className="font-medium text-black border-b-2 border-black pb-1">
+            <span 
+              onClick={() => setActiveTab("All")}
+              className={getTabClass("All")}
+            >
               All reports
             </span>
-            <span className="text-gray-500 hover:text-black cursor-pointer">Pending</span>
-            <span className="text-gray-500 hover:text-black cursor-pointer">In-progress</span>
-            <span className="text-gray-500 hover:text-black cursor-pointer">Resolved</span>
+            <span 
+              onClick={() => setActiveTab("Pending")}
+              className={getTabClass("Pending")}
+            >
+              Pending
+            </span>
+            <span 
+              onClick={() => setActiveTab("In-progress")}
+              className={getTabClass("In-progress")}
+            >
+              In-progress
+            </span>
+            <span 
+              onClick={() => setActiveTab("Resolved")}
+              className={getTabClass("Resolved")}
+            >
+              Resolved
+            </span>
           </div>
 
           <div className="relative">
@@ -152,7 +201,7 @@ const Reports: React.FC = () => {
         {/* EMPTY STATE */}
         {filteredReports.length === 0 && (
           <div className="py-16 text-center text-gray-500 text-sm">
-            No reports found.
+            No {activeTab !== "All" ? activeTab.toLowerCase() : ""} reports found.
           </div>
         )}
 

@@ -1,5 +1,5 @@
 // ------------------------------------------------------
-// src/pages/Teams.tsx — Updated Categories & Dropdown Style
+// src/pages/Teams.tsx — Updated with Success Popup
 // ------------------------------------------------------
 import React, { useEffect, useState } from "react";
 import { 
@@ -12,6 +12,7 @@ import {
   orderBy 
 } from "firebase/firestore";
 import { db } from "../firebase";
+import PopupMessage from "../components/PopupMessage"; // Ensure this path is correct
 import { 
   HiPlus, 
   HiOutlineUsers, 
@@ -20,15 +21,14 @@ import {
   HiOutlineIdentification,
   HiOutlineBriefcase,
   HiXMark,
-  HiChevronDown // Added for the custom dropdown arrow
+  HiChevronDown,
+  HiOutlineExclamationCircle 
 } from "react-icons/hi2";
 
-// 1. Team Interface
 interface Team {
   id: string;
   teamId: string;
   name: string;
-  // Updated Category Types
   category: "Pothole" | "Drainage" | "Signage" | "Streetlight";
   status: "Available" | "Busy";
   passcode: string;
@@ -37,15 +37,34 @@ interface Team {
 
 const Teams: React.FC = () => {
   const [teams, setTeams] = useState<Team[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Modal States
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [teamToDelete, setTeamToDelete] = useState<string | null>(null);
+
+  // Popup Controller
+  const [popup, setPopup] = useState<{
+    type?: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  } | null>(null);
+
+  const showPopup = (
+    type: "success" | "error" | "warning" | "info",
+    title: string,
+    message: string
+  ) => setPopup({ type, title, message });
 
   // Form State
   const [newTeamName, setNewTeamName] = useState("");
-  // Set default to first valid option
   const [newTeamCategory, setNewTeamCategory] = useState("Pothole");
+  
+  const isDuplicateName = teams.some(
+    (team) => team.name.toLowerCase() === newTeamName.trim().toLowerCase()
+  );
 
-  // Fetch Teams
   const fetchTeams = async () => {
     setIsLoading(true);
     try {
@@ -63,7 +82,6 @@ const Teams: React.FC = () => {
     fetchTeams();
   }, []);
 
-  // Generate Credentials
   const generateCredentials = () => {
     const randomId = Math.floor(1000 + Math.random() * 9000);
     const randomPass = Math.floor(1000 + Math.random() * 9000);
@@ -73,15 +91,14 @@ const Teams: React.FC = () => {
     };
   };
 
-  // Add Team
   const handleAddTeam = async () => {
-    if (!newTeamName.trim()) return;
+    if (!newTeamName.trim() || isDuplicateName) return;
 
     const { teamId, passcode } = generateCredentials();
 
     const newTeam = {
       teamId,
-      name: newTeamName,
+      name: newTeamName.trim(),
       category: newTeamCategory,
       status: "Available",
       passcode,
@@ -89,19 +106,36 @@ const Teams: React.FC = () => {
       createdAt: Date.now()
     };
 
-    await addDoc(collection(db, "teams"), newTeam);
-    setIsModalOpen(false);
-    setNewTeamName("");
-    setNewTeamCategory("Pothole"); // Reset to default
-    fetchTeams();
+    try {
+      await addDoc(collection(db, "teams"), newTeam);
+      
+      // ✅ SUCCESS POPUP
+      showPopup(
+        "success",
+        "Team Created 🎉",
+        `${newTeamName} has been successfully registered with Team ID: ${teamId}`
+      );
+
+      setIsCreateModalOpen(false);
+      setNewTeamName("");
+      setNewTeamCategory("Pothole");
+      fetchTeams();
+    } catch (error) {
+      showPopup("error", "Creation Failed", "Could not create the team. Please try again.");
+    }
   };
 
-  // Delete Team
-  const handleDeleteTeam = async (id: string) => {
-    if (window.confirm("Are you sure you want to disband this team?")) {
-      await deleteDoc(doc(db, "teams", id));
-      setTeams(teams.filter(t => t.id !== id));
-    }
+  const confirmDelete = (id: string) => {
+    setTeamToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteTeam = async () => {
+    if (!teamToDelete) return;
+    await deleteDoc(doc(db, "teams", teamToDelete));
+    setTeams(teams.filter(t => t.id !== teamToDelete));
+    setIsDeleteModalOpen(false);
+    setTeamToDelete(null);
   };
 
   return (
@@ -117,7 +151,7 @@ const Teams: React.FC = () => {
             </p>
           </div>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => setIsCreateModalOpen(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-xl text-sm font-semibold shadow-md 
                        hover:opacity-90 transition active:scale-[0.97]"
           >
@@ -147,13 +181,12 @@ const Teams: React.FC = () => {
             {teams.map((team) => (
               <div key={team.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all group relative">
                 
-                {/* Header */}
                 <div className="flex justify-between items-start mb-4">
                   <div className="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-100 transition-colors">
                     <HiOutlineBriefcase className="w-6 h-6" />
                   </div>
                   <button 
-                    onClick={() => handleDeleteTeam(team.id)}
+                    onClick={() => confirmDelete(team.id)}
                     className="text-gray-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition active:scale-[0.90]"
                     title="Delete Team"
                   >
@@ -161,13 +194,11 @@ const Teams: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Info */}
                 <h3 className="text-lg font-bold text-gray-900">{team.name}</h3>
                 <span className="inline-block mt-2 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-600 border border-gray-200 uppercase tracking-wide">
                   {team.category}
                 </span>
 
-                {/* Credentials Box */}
                 <div className="mt-6 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden">
                   <div className="flex justify-between items-center p-3 border-b border-gray-200/60">
                     <span className="text-xs font-medium text-gray-500 flex items-center gap-2 uppercase tracking-wider">
@@ -195,19 +226,18 @@ const Teams: React.FC = () => {
         )}
       </div>
 
-      {/* CREATE MODAL */}
-      {isModalOpen && (
+      {/* --- CREATE MODAL --- */}
+      {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fadeIn">
           <div className="bg-white p-8 rounded-3xl w-full max-w-md shadow-2xl transform scale-100 border border-gray-100">
             <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-gray-900">Create Work Team</h3>
-                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-900 transition-colors">
+                <button onClick={() => setIsCreateModalOpen(false)} className="text-gray-400 hover:text-gray-900 transition-colors">
                     <HiXMark className="w-6 h-6" />
                 </button>
             </div>
             
             <div className="space-y-5">
-              {/* Team Name Input */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Team Name</label>
                 <input 
@@ -215,11 +245,17 @@ const Teams: React.FC = () => {
                   placeholder="e.g. Alpha Road Unit"
                   value={newTeamName}
                   onChange={(e) => setNewTeamName(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl p-3 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-black/5 focus:border-black outline-none transition-all placeholder-gray-400"
+                  className={`w-full border rounded-xl p-3 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-black/5 focus:border-black outline-none transition-all placeholder-gray-400 ${
+                    isDuplicateName ? 'border-red-500 bg-red-50' : 'border-gray-200'
+                  }`}
                 />
+                {isDuplicateName && (
+                  <p className="text-[11px] text-red-500 mt-2 ml-1 font-medium flex items-center gap-1">
+                    <HiOutlineExclamationCircle /> This team name is already in use.
+                  </p>
+                )}
               </div>
 
-              {/* Improved Custom Dropdown */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Category</label>
                 <div className="relative">
@@ -235,7 +271,6 @@ const Teams: React.FC = () => {
                         <option value="Signage">Signage Repair</option>
                         <option value="Streetlight">Street Lights</option>
                     </select>
-                    {/* Custom Arrow Icon */}
                     <div className="absolute right-3 top-3.5 pointer-events-none text-gray-500">
                         <HiChevronDown className="w-4 h-4" />
                     </div>
@@ -243,10 +278,9 @@ const Teams: React.FC = () => {
               </div>
             </div>
 
-            {/* Buttons */}
             <div className="flex gap-3 mt-8">
               <button 
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => setIsCreateModalOpen(false)}
                 className="flex-1 py-3 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-xl 
                            hover:bg-slate-50 transition active:scale-[0.97]"
               >
@@ -254,7 +288,7 @@ const Teams: React.FC = () => {
               </button>
               <button 
                 onClick={handleAddTeam}
-                disabled={!newTeamName.trim()}
+                disabled={!newTeamName.trim() || isDuplicateName}
                 className="flex-1 py-3 text-sm font-semibold text-white bg-black rounded-xl 
                            hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition active:scale-[0.97]"
               >
@@ -264,6 +298,53 @@ const Teams: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* --- DELETE CONFIRMATION MODAL --- */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fadeIn">
+          <div className="bg-white p-8 rounded-3xl w-full max-w-sm shadow-2xl transform scale-100 border border-gray-100 text-center">
+            
+            <div className="flex justify-center mb-6">
+              <div className="p-4 bg-red-50 text-red-600 rounded-full ring-8 ring-red-50/50">
+                <HiOutlineExclamationCircle className="w-8 h-8" />
+              </div>
+            </div>
+
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Work Team?</h3>
+            <p className="text-sm text-gray-500 mb-8 leading-relaxed px-2">
+              This will permanently remove this team and its access credentials. This action cannot be undone.
+            </p>
+
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="flex-1 py-3 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-xl 
+                           hover:bg-slate-50 transition active:scale-[0.97]"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteTeam}
+                className="flex-1 py-3 text-sm font-semibold text-white bg-red-600 rounded-xl 
+                           hover:bg-red-700 transition active:scale-[0.97]"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ POPUP MESSAGE COMPONENT */}
+      {popup && (
+        <PopupMessage
+          type={popup.type}
+          title={popup.title}
+          message={popup.message}
+          onClose={() => setPopup(null)}
+        />
+      )}
+
     </div>
   );
 };
