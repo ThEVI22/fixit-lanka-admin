@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { FiHome, FiFileText, FiUsers, FiSettings, FiLogOut } from "react-icons/fi";
+import { 
+  FiHome, 
+  FiFileText, 
+  FiUsers, 
+  FiList,     
+  FiSettings, 
+  FiLogOut 
+} from "react-icons/fi";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import LogoutModal from "../components/LogoutModal";
@@ -25,9 +32,6 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* FIXED: Removed 'fixed left-0 top-0 z-50' 
-         Reverted to standard flex column so it pushes the main content correctly.
-      */}
       <aside className="w-64 bg-white border-r border-slate-100 min-h-screen flex flex-col">
         
         {/* Brand */}
@@ -49,10 +53,15 @@ const Sidebar = () => {
             <span>Reports</span>
           </NavLink>
 
-          {/* UPDATED: Users -> Teams */}
           <NavLink to="/teams" className={linkClasses}>
             <FiUsers size={18} />
             <span>Teams</span>
+          </NavLink>
+
+          {/* Unified Staff Directory link without section label */}
+          <NavLink to="/staff-directory" className={linkClasses}>
+            <FiList size={18} />
+            <span>Staff Directory</span>
           </NavLink>
 
           <NavLink to="/settings" className={linkClasses}>

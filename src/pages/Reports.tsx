@@ -9,259 +9,220 @@ import {
 import { db } from "../firebase";
 
 import { FiSearch } from "react-icons/fi";
-import { HiClipboardList, HiClock, HiCheckCircle } from "react-icons/hi";
+// Using standard 'hi' library to avoid import errors
+import {
+  HiOutlineClipboardList,
+  HiOutlineClock,
+  HiOutlineCheckCircle,
+  HiOutlinePause
+} from "react-icons/hi";
 
 const statusColor: Record<string, string> = {
   Pending: "bg-amber-100 text-amber-700",
   "In-progress": "bg-blue-100 text-blue-700",
   Resolved: "bg-emerald-100 text-emerald-700",
   Declined: "bg-red-100 text-red-700",
-  "On-Hold": "bg-orange-100 text-orange-700", // Added just in case
+  "On-Hold": "bg-orange-100 text-orange-700",
 };
 
 const Reports: React.FC = () => {
   const navigate = useNavigate();
   const [reports, setReports] = useState<any[]>([]);
   const [search, setSearch] = useState("");
-  
-  // ✅ NEW: Track the Active Tab (Default: 'All')
   const [activeTab, setActiveTab] = useState("All");
 
-  // Live updates
   useEffect(() => {
-    const q = query(
-      collection(db, "all_reports"),
-      orderBy("createdAtMs", "desc")
-    );
-
+    const q = query(collection(db, "all_reports"), orderBy("createdAtMs", "desc"));
     const unsub = onSnapshot(q, (snap) => {
       const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       setReports(list);
     });
-
     return () => unsub();
   }, []);
 
   // Summary counts
   const totalPending = reports.filter((r) => r.status === "Pending").length;
   const totalInProgress = reports.filter((r) => r.status === "In-progress").length;
+  const totalOnHold = reports.filter((r) => r.status === "On-Hold").length;
   const totalResolved = reports.filter((r) => r.status === "Resolved").length;
 
-  const today = new Date().toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-
-  // ✅ UPDATED FILTER LOGIC: (Search + Tab)
   const filteredReports = reports.filter((r) => {
-    // 1. Search Filter
     const s = search.toLowerCase();
-    const matchesSearch = 
+    const matchesSearch =
       (r.adminReportId || "").toLowerCase().includes(s) ||
       (r.category || "").toLowerCase().includes(s) ||
       (r.description || "").toLowerCase().includes(s);
 
-    // 2. Tab Filter
     let matchesTab = true;
-    if (activeTab === "Pending") matchesTab = r.status === "Pending";
-    else if (activeTab === "In-progress") matchesTab = r.status === "In-progress";
-    else if (activeTab === "Resolved") matchesTab = r.status === "Resolved";
-    
+    if (activeTab !== "All") matchesTab = r.status === activeTab;
+
     return matchesSearch && matchesTab;
   });
 
-  const shorten = (text: string = "") =>
-    text.length > 40 ? text.slice(0, 40) + "..." : text;
-
-  // Helper to style tabs
-  const getTabClass = (tabName: string) => {
-    const isActive = activeTab === tabName;
-    return `cursor-pointer pb-1 transition-colors ${
-      isActive 
-        ? "font-medium text-black border-b-2 border-black" 
-        : "text-gray-500 hover:text-black"
-    }`;
-  };
-
   return (
-    <div className="space-y-8">
-
+    <div className="space-y-8 animate-fadeIn">
       {/* HEADER */}
       <div>
-        <p className="text-xs text-gray-400">{today}</p>
-        <h1 className="text-3xl font-semibold text-gray-900 mt-1">Reports</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Review, triage, and track Fixit Lanka issue reports in one place.
-        </p>
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Incidents</p>
+        <h1 className="text-3xl font-bold text-gray-900 mt-1">Incident Reports</h1>
+        <p className="text-sm text-gray-500 mt-1 font-medium">Review and track all maintenance tasks in real-time.</p>
       </div>
 
-      {/* SUMMARY CARDS (Clickable to switch tabs quickly) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-        {/* Pending */}
-        <div 
-          onClick={() => setActiveTab("Pending")}
-          className={`flex items-center gap-4 bg-white p-5 shadow-sm border rounded-2xl hover:shadow-md transition cursor-pointer
-            ${activeTab === "Pending" ? "border-amber-200 ring-1 ring-amber-100" : "border-gray-100"}`}
-        >
-          <div className="p-3 bg-amber-100 text-amber-700 rounded-xl">
-            <HiClock size={22} />
-          </div>
-          <div>
-            <p className="text-xs uppercase text-gray-400 font-medium">Pending</p>
-            <p className="text-3xl font-semibold text-gray-800 mt-1">
-              {totalPending}
-            </p>
-            <p className="text-[11px] text-gray-500 mt-1">Waiting for admin to assign the task</p>
-          </div>
-        </div>
-
-        {/* In-progress */}
-        <div 
-          onClick={() => setActiveTab("In-progress")}
-          className={`flex items-center gap-4 bg-white p-5 shadow-sm border rounded-2xl hover:shadow-md transition cursor-pointer
-            ${activeTab === "In-progress" ? "border-blue-200 ring-1 ring-blue-100" : "border-gray-100"}`}
-        >
-          <div className="p-3 bg-blue-100 text-blue-700 rounded-xl">
-            <HiClipboardList size={22} />
-          </div>
-          <div>
-            <p className="text-xs uppercase text-gray-400 font-medium">In-progress</p>
-            <p className="text-3xl font-semibold text-gray-800 mt-1">
-              {totalInProgress}
-            </p>
-            <p className="text-[11px] text-gray-500 mt-1">Currently being processed</p>
-          </div>
-        </div>
-
-        {/* Resolved */}
-        <div 
-          onClick={() => setActiveTab("Resolved")}
-          className={`flex items-center gap-4 bg-white p-5 shadow-sm border rounded-2xl hover:shadow-md transition cursor-pointer
-            ${activeTab === "Resolved" ? "border-emerald-200 ring-1 ring-emerald-100" : "border-gray-100"}`}
-        >
-          <div className="p-3 bg-emerald-100 text-emerald-700 rounded-xl">
-            <HiCheckCircle size={22} />
-          </div>
-          <div>
-            <p className="text-xs uppercase text-gray-400 font-medium">Resolved</p>
-            <p className="text-3xl font-semibold text-gray-800 mt-1">
-              {totalResolved}
-            </p>
-            <p className="text-[11px] text-gray-500 mt-1">Marked as completed</p>
-          </div>
-        </div>
+      {/* SUMMARY CARDS (Classic Style with Better Spacing) */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+        <MetricCard
+          label="Pending" count={totalPending} icon={<HiOutlineClock size={22} />}
+          color="amber" active={activeTab === "Pending"} onClick={() => setActiveTab("Pending")}
+          subText="Waiting for assignment"
+        />
+        <MetricCard
+          label="In-progress" count={totalInProgress} icon={<HiOutlineClipboardList size={22} />}
+          color="blue" active={activeTab === "In-progress"} onClick={() => setActiveTab("In-progress")}
+          subText="Active in field"
+        />
+        <MetricCard
+          label="On-Hold" count={totalOnHold} icon={<HiOutlinePause size={22} />}
+          color="orange" active={activeTab === "On-Hold"} onClick={() => setActiveTab("On-Hold")}
+          subText="Work suspended"
+        />
+        <MetricCard
+          label="Resolved" count={totalResolved} icon={<HiOutlineCheckCircle size={22} />}
+          color="emerald" active={activeTab === "Resolved"} onClick={() => setActiveTab("Resolved")}
+          subText="Tasks completed"
+        />
       </div>
 
       {/* TABLE CARD */}
-      <div className="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
+      <div className="bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden">
 
         {/* TABS + SEARCH */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50">
-          <div className="flex items-center gap-6 text-sm">
-            <span 
-              onClick={() => setActiveTab("All")}
-              className={getTabClass("All")}
-            >
-              All reports
-            </span>
-            <span 
-              onClick={() => setActiveTab("Pending")}
-              className={getTabClass("Pending")}
-            >
-              Pending
-            </span>
-            <span 
-              onClick={() => setActiveTab("In-progress")}
-              className={getTabClass("In-progress")}
-            >
-              In-progress
-            </span>
-            <span 
-              onClick={() => setActiveTab("Resolved")}
-              className={getTabClass("Resolved")}
-            >
-              Resolved
-            </span>
+        <div className="flex flex-col md:flex-row items-center justify-between px-8 py-6 border-b border-gray-100 gap-6">
+          <div className="flex items-center gap-8">
+            {["All", "Pending", "In-progress", "On-Hold", "Resolved"].map((tab) => (
+              <span
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`cursor-pointer pb-2 text-[11px] font-bold uppercase tracking-widest transition-all ${activeTab === tab
+                  ? "text-[#00172D] border-b-2 border-[#00172D]"
+                  : "text-gray-400 hover:text-gray-600 border-b-2 border-transparent"
+                  }`}
+              >
+                {tab === "All" ? "All" : tab}
+              </span>
+            ))}
           </div>
 
-          <div className="relative">
-            <FiSearch className="absolute left-3 top-2.5 text-gray-400" />
+          <div className="relative group w-full md:w-auto">
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by title, category, or ID..."
-              className="text-xs w-72 rounded-full bg-white border border-gray-200 pl-9 pr-4 py-2 focus:ring-1 focus:ring-black/70 transition"
+              placeholder="Search reports..."
+              className="w-full md:w-64 bg-gray-50 border border-gray-200 text-xs font-medium text-gray-700 pl-9 pr-4 py-2.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-gray-100 focus:border-gray-300 transition-all placeholder:text-gray-400"
             />
           </div>
         </div>
 
-        {/* EMPTY STATE */}
-        {filteredReports.length === 0 && (
-          <div className="py-16 text-center text-gray-500 text-sm">
-            No {activeTab !== "All" ? activeTab.toLowerCase() : ""} reports found.
-          </div>
-        )}
-
-        {/* TABLE */}
-        {filteredReports.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full table-fixed text-sm">
-              <thead className="bg-white border-b border-gray-100 text-xs text-gray-400">
+        {/* DATA TABLE */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-gray-50/50 border-b border-gray-100 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+              <tr>
+                <th className="px-8 py-4">Report ID</th>
+                <th className="px-8 py-4">Category</th>
+                <th className="px-8 py-4">Description</th>
+                <th className="px-8 py-4">Status</th>
+                <th className="px-8 py-4">Created</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {filteredReports.length === 0 ? (
                 <tr>
-                  <th className="px-6 py-3 font-medium w-[100px] text-left">Report ID</th>
-                  <th className="px-6 py-3 font-medium w-[150px] text-left">Category</th>
-                  <th className="px-6 py-3 font-medium w-[350px] text-left">Description</th>
-                  <th className="px-6 py-3 font-medium w-[120px] text-left">Report Status</th>
-                  <th className="px-6 py-3 font-medium w-[180px] text-left">Created</th>
+                  <td colSpan={5} className="px-6 py-24 text-center text-slate-400">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="bg-slate-50 p-4 rounded-full">
+                        <HiOutlineClipboardList size={32} className="text-slate-300" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">No reports found</p>
+                        <p className="text-xs">New citizen reports will appear here.</p>
+                      </div>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-
-              <tbody>
-                {filteredReports.map((r, idx) => (
+              ) : (
+                filteredReports.map((r) => (
                   <tr
                     key={r.id}
                     onClick={() => navigate(`/reports/${r.id}`)}
-                    className={`cursor-pointer transition ${
-                      idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                    } hover:bg-gray-100`}
+                    className="group cursor-pointer hover:bg-gray-50 transition-colors"
                   >
-                    <td className="px-6 py-3 text-xs font-mono text-gray-600">
-                      {r.adminReportId || "---"}
+                    <td className="px-8 py-5">
+                      <span className="font-mono text-xs font-bold text-[#00172D] bg-gray-100/50 px-2 py-1 rounded text-gray-600">
+                        {r.adminReportId || "---"}
+                      </span>
                     </td>
-
-                    <td className="px-6 py-3 text-sm text-gray-700">
-                      {r.category}
+                    <td className="px-8 py-5">
+                      <p className="text-sm font-bold text-gray-700">{r.category}</p>
                     </td>
-
-                    <td className="px-6 py-3 text-xs text-gray-500">
-                      {shorten(r.description)}
+                    <td className="px-8 py-5">
+                      <p className="text-xs text-gray-500 font-medium max-w-[250px] truncate">
+                        {r.description}
+                      </p>
                     </td>
-
-                    <td className="px-6 py-3">
-                      <span
-                        className={`
-                          inline-flex items-center justify-center
-                          min-w-[90px] h-[28px]
-                          px-3 rounded-full text-[11px] font-medium
-                        ${statusColor[r.status] || "bg-gray-100 text-gray-600"
-                        }`}
-                      >
+                    <td className="px-8 py-5">
+                      <span className={`inline-flex items-center justify-center min-w-[90px] px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusColor[r.status] || "bg-gray-100 text-gray-500"}`}>
                         {r.status}
                       </span>
                     </td>
-
-                    <td className="px-6 py-3 text-xs text-gray-500">
-                      {new Date(r.createdAtMs).toLocaleString("en-GB")}
+                    <td className="px-8 py-5">
+                      <span className="text-xs font-medium text-gray-500">
+                        {new Date(r.createdAtMs).toLocaleString("en-GB", { dateStyle: 'short', timeStyle: 'short' })}
+                      </span>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                )))}
+            </tbody>
+          </table>
+          {/* Removed old empty state div */}
+        </div>
+      </div>
+    </div >
+  );
+};
+
+// --- HELPER COMPONENT: METRIC CARD ---
+// --- HELPER COMPONENT: METRIC CARD ---
+const MetricCard = ({ label, count, icon, color, active, onClick, subText }: any) => {
+  const colors: any = {
+    amber: "bg-amber-50 text-amber-600",
+    blue: "bg-blue-50 text-blue-600",
+    emerald: "bg-emerald-50 text-emerald-600",
+    orange: "bg-orange-50 text-orange-600",
+  };
+
+  return (
+    <div
+      onClick={onClick}
+      className={`bg-white p-6 shadow-sm border border-gray-100/50 rounded-2xl hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full cursor-pointer ${active ? "ring-2 ring-black border-transparent" : ""
+        }`}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <p className="text-[11px] uppercase text-gray-400 font-bold tracking-widest mb-1">
+            {label}
+          </p>
+          <p className="text-3xl font-extrabold text-slate-900 tracking-tight">{count}</p>
+        </div>
+        <div className={`p-3 rounded-xl ${colors[color]} shadow-sm`}>{icon}</div>
+      </div>
+      <div className="flex items-center gap-2">
+        {/* Badge adapted for Reports context - showing active state or just a dot */}
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${color === 'orange' ? 'text-orange-600 bg-orange-50' : 'text-emerald-600 bg-emerald-50'}`}>
+          {active ? 'Active' : 'View'}
+        </span>
+        <p className="text-[11px] text-gray-400 font-medium truncate">{subText}</p>
       </div>
     </div>
   );

@@ -4,10 +4,16 @@ import DashboardLayout from "./layout/DashboardLayout";
 
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
-import Teams from "./pages/Teams"; // UPDATED: Import Teams
+import Teams from "./pages/Teams";
 import Settings from "./pages/Settings";
 import ReportDetails from "./pages/ReportDetails";
 import AdminLogin from "./pages/AdminLogin";
+
+// --- NEW STAFF MANAGEMENT IMPORTS ---
+// Verify that these filenames match exactly (case-sensitive)
+
+import StaffDirectory from "./pages/StaffDirectory";
+// ------------------------------------
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import AuthGate from "./components/AuthGate";
@@ -15,16 +21,12 @@ import AuthGate from "./components/AuthGate";
 function App() {
   return (
     <BrowserRouter>
-      {/* Wait for Firebase Auth before rendering anything */}
       <AuthGate>
         <Routes>
-
           {/* LOGIN PAGE */}
           <Route path="/login" element={<AdminLogin />} />
 
-          {/* =======================
-              PROTECTED ROUTES
-          ========================*/}
+          {/* PROTECTED ROUTES */}
           <Route
             path="/"
             element={
@@ -58,13 +60,25 @@ function App() {
             }
           />
 
-          {/* UPDATED: Route for Teams */}
           <Route
             path="/teams"
             element={
               <ProtectedRoute>
                 <DashboardLayout>
                   <Teams />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+
+
+
+          <Route
+            path="/staff-directory"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <StaffDirectory />
                 </DashboardLayout>
               </ProtectedRoute>
             }

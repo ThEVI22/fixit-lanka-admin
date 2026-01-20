@@ -1,0 +1,13 @@
+@echo off
+echo Fixing dependency issues...
+cd /d "%~dp0"
+echo Installing recharts with legacy peer dependencies...
+call npm install recharts --legacy-peer-deps
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERROR] Failed to install recharts. Trying force install...
+    call npm install recharts --force
+)
+echo Verifying installation...
+call npm list recharts
+echo Done. Press any key to exit.
+pause
