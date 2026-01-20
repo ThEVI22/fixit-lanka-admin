@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { 
-  FiHome, 
-  FiFileText, 
-  FiUsers, 
-  FiList,     
-  FiSettings, 
-  FiLogOut 
+import {
+  FiHome,
+  FiFileText,
+  FiUsers,
+  FiList,
+  FiLogOut
 } from "react-icons/fi";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
@@ -33,7 +32,7 @@ const Sidebar = () => {
   return (
     <>
       <aside className="w-64 bg-white border-r border-slate-100 min-h-screen flex flex-col">
-        
+
         {/* Brand */}
         <div className="h-16 flex items-center px-6 -mt-px border-b border-slate-50/50">
           <span className="text-2xl font-bold tracking-tight text-slate-900">
@@ -64,10 +63,7 @@ const Sidebar = () => {
             <span>Staff Directory</span>
           </NavLink>
 
-          <NavLink to="/settings" className={linkClasses}>
-            <FiSettings size={18} />
-            <span>Settings</span>
-          </NavLink>
+
 
           {/* Logout Button */}
           <button
