@@ -8,7 +8,7 @@ import {
   HiOutlineMagnifyingGlass, HiOutlinePencilSquare, HiOutlineTrash,
   HiOutlineEye, HiOutlineXMark, HiOutlinePlus,
   HiOutlineExclamationTriangle, HiOutlineEnvelope, HiOutlinePhone,
-  HiOutlineIdentification, HiOutlineMapPin, HiOutlineUserPlus,
+  HiOutlineMapPin, HiOutlineUserPlus,
   HiOutlineUsers, HiOutlineLockClosed, HiOutlineBriefcase
 } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";

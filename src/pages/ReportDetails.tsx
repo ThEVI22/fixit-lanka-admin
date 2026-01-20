@@ -184,7 +184,6 @@ const ReportDetails: React.FC = () => {
   const [declineReason, setDeclineReason] = useState("");
   const [availableTeams, setAvailableTeams] = useState<any[]>([]);
   const [selectedTeam, setSelectedTeam] = useState("");
-  const [isLoadingTeams, setIsLoadingTeams] = useState(false);
   const [popup, setPopup] = useState<{ type: "success" | "error"; title: string; message: string } | null>(null);
 
   // ✅ NEW: Attendance State
@@ -208,6 +207,7 @@ const ReportDetails: React.FC = () => {
         return { id: doc.id, ...data, sortTime: ts };
       }).filter((e: any) =>
         e.target !== 'user' &&
+        e.type !== 'team_update' && // ✅ Exclude internal team updates
         !e.title?.startsWith("You ") &&
         !e.message?.startsWith("Your ") &&
         !e.message?.startsWith("You ") &&
@@ -272,7 +272,6 @@ const ReportDetails: React.FC = () => {
 
   const fetchMatchingTeams = async () => {
     if (!report?.category) return;
-    setIsLoadingTeams(true);
     try {
       let searchCategory = report.category;
       if (searchCategory === "Pothole") searchCategory = "Pothole Maintenance";
@@ -281,7 +280,6 @@ const ReportDetails: React.FC = () => {
       const snap = await getDocs(q);
       setAvailableTeams(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (error) { console.error("Team Fetch Error", error); }
-    setIsLoadingTeams(false);
   };
 
   const handleApprove = async () => {
@@ -541,6 +539,7 @@ const ReportDetails: React.FC = () => {
             <div className="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
               {timelineEvents
                 .filter(e => e.title !== "New Job Assignment") // ✅ Hide internal worker assignments
+                .filter(e => e.title !== "Removed from Job") // ✅ Hide "Removed from Job" (Redundant for Admin)
                 .map((event) => {
                   // ✅ TRANSFORM TO ADMIN POV
                   let displayTitle = event.title;
