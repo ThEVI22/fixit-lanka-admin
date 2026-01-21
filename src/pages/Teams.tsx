@@ -33,6 +33,7 @@ const Teams: React.FC = () => {
   const [teamName, setTeamName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Pothole Maintenance");
   const [selectedSupervisor, setSelectedSupervisor] = useState("");
+  const [nameError, setNameError] = useState(""); // ✅ Added for duplicate/validation error
   const [popup, setPopup] = useState<{ type: "success" | "error"; title: string; message: string } | null>(null);
 
   const [actionConfirm, setActionConfirm] = useState<{ team: any, type: 'update' | 'delete', payload?: any, reportId?: string, reportLoc?: string, supervisorName?: string } | null>(null);
@@ -62,6 +63,29 @@ const Teams: React.FC = () => {
     selectedCategory !== selectedTeam.category ||
     selectedSupervisor !== selectedTeam.supervisorEmail
   ) : teamName !== "" && selectedSupervisor !== "";
+
+  // ✅ Validation Logic
+  const validateName = (name: string) => {
+    if (!name.trim()) {
+      setNameError("");
+      return;
+    }
+    const duplicate = teams.find(t =>
+      t.teamName.toLowerCase().trim() === name.toLowerCase().trim() &&
+      (!isEditMode || t.id !== selectedTeam?.id) // Exclude self in edit mode
+    );
+    if (duplicate) {
+      setNameError("Team name already exists. Please use a unique identifier.");
+    } else {
+      setNameError("");
+    }
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value;
+    setTeamName(newName);
+    validateName(newName);
+  };
 
   useEffect(() => {
     const q = query(collection(db, "teams"));
@@ -117,6 +141,7 @@ const Teams: React.FC = () => {
   const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault();
     if (availableSupervisors.length === 0 && !isEditMode) return;
+    if (nameError) return; // Block submission if error exists
 
     setRegLoading(true); // ✅ Start loading
     try {
@@ -145,6 +170,7 @@ const Teams: React.FC = () => {
 
       setPopup({ type: "success", title: "Success", message: `Team initialized. Notification sent to supervisor.` });
       setTeamName("");
+      setNameError("");
       setSelectedSupervisor("");
       setIsModalOpen(false);
     } catch (err) {
@@ -156,6 +182,7 @@ const Teams: React.FC = () => {
 
   const handleUpdateTeam = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (nameError) return; // Block submission
 
     // ✅ SMART RESTRICTION: Guided Flow for SUPERVISOR CHANGE
     const oldEmail = selectedTeam.supervisorEmail;
@@ -287,7 +314,7 @@ const Teams: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900 mt-1">Teams Dashboard</h1>
           <p className="text-sm text-gray-500 mt-1 font-medium">Official RDA maintenance units management.</p>
         </div>
-        <button onClick={() => { setIsEditMode(false); setTeamName(""); setSelectedSupervisor(""); setIsModalOpen(true); }} className={btnBlack}>
+        <button onClick={() => { setIsEditMode(false); setTeamName(""); setNameError(""); setSelectedSupervisor(""); setIsModalOpen(true); }} className={btnBlack}>
           <HiOutlinePlus /> Create Team
         </button>
       </div>
@@ -345,7 +372,7 @@ const Teams: React.FC = () => {
                   <td className="px-6 py-4 text-center">
                     <div className="flex items-center justify-center gap-2">
                       <button onClick={() => handleViewDetails(team)} className="p-2.5 hover:bg-blue-50 rounded-xl transition-all text-slate-400 hover:text-blue-600 active:scale-90"><HiOutlineEye size={18} /></button>
-                      <button onClick={() => { setSelectedTeam(team); setTeamName(team.teamName); setSelectedCategory(team.category); setSelectedSupervisor(team.supervisorEmail); setIsEditMode(true); setIsModalOpen(true); }} className="p-2.5 hover:bg-slate-100 rounded-xl transition-all text-slate-400 hover:text-black active:scale-90"><HiOutlinePencilSquare size={18} /></button>
+                      <button onClick={() => { setSelectedTeam(team); setTeamName(team.teamName); setNameError(""); setSelectedCategory(team.category); setSelectedSupervisor(team.supervisorEmail); setIsEditMode(true); setIsModalOpen(true); }} className="p-2.5 hover:bg-slate-100 rounded-xl transition-all text-slate-400 hover:text-black active:scale-90"><HiOutlinePencilSquare size={18} /></button>
                       <button onClick={() => setTeamToDelete(team)} className="p-2.5 hover:bg-red-50 rounded-xl transition-all text-slate-400 hover:text-red-500 active:scale-90"><HiOutlineTrash size={18} /></button>
                     </div>
                   </td>
@@ -368,9 +395,15 @@ const Teams: React.FC = () => {
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Team Identity Name</label>
                 <input required
                   value={teamName}
-                  onChange={(e) => setTeamName(e.target.value)}
+                  value={teamName}
+                  onChange={handleNameChange} // ✅ Updated handler
                   placeholder="Type unit name (e.g. Alpha Unit 01)"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 outline-none focus:border-black transition-all" />
+                  className={`w-full bg-slate-50 border ${nameError ? 'border-red-500 focus:border-red-600' : 'border-slate-200 focus:border-black'} rounded-xl px-4 py-3.5 outline-none transition-all`} />
+                {nameError && (
+                  <p className="text-red-500 text-[10px] mt-2 font-bold uppercase tracking-tight flex items-center gap-1 animate-in slide-in-from-top-1">
+                    <HiOutlineExclamationTriangle /> {nameError}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -406,7 +439,7 @@ const Teams: React.FC = () => {
 
               <div className="flex gap-4 pt-6">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 font-bold text-slate-500 hover:bg-slate-50 rounded-2xl transition-all">Cancel</button>
-                <button type="submit" disabled={!hasChanges || regLoading || (availableSupervisors.length === 0 && !isEditMode)} className={`flex-1 ${btnBlack}`}>
+                <button type="submit" disabled={!hasChanges || regLoading || !!nameError || (availableSupervisors.length === 0 && !isEditMode)} className={`flex-1 ${btnBlack}`}>
                   {/* ✅ Loading Animation logic */}
                   {regLoading ? (
                     <div className="flex items-center justify-center gap-2">

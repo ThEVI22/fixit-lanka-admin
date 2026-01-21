@@ -19,6 +19,7 @@ interface StaffMember {
   id: string;
   staffId: string;
   fullName: string;
+  email: string; // ✅ Added for validation
   nic: string;
   role: "Supervisor" | "Worker";
   specialization: string;
@@ -67,6 +68,43 @@ const StaffDirectory: React.FC = () => {
     specialization: "Pothole Maintenance",
   });
 
+  // ✅ Validation State
+  const [errors, setErrors] = useState({
+    email: "", nic: "", phone: "", fullName: "", dob: ""
+  });
+
+  // ✅ Real-time Validation Logic
+  const validateField = (name: string, value: string) => {
+    let error = "";
+    switch (name) {
+      case "email":
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = "Invalid email format.";
+        else if (staff.some(m => m.email.toLowerCase() === value.toLowerCase())) error = "Email already registered.";
+        break;
+      case "nic":
+        if (!/^(?:\d{9}[Vv]|\d{12})$/.test(value)) error = "Invalid NIC (9+V or 12 digits).";
+        else if (staff.some(m => m.nic.toLowerCase() === value.toLowerCase())) error = "NIC already registered.";
+        break;
+      case "phone":
+        if (!/^(?:0|94|\+94)?7(0|1|2|4|5|6|7|8)\d{7}$/.test(value)) error = "Invalid SL mobile number.";
+        break;
+      case "fullName":
+        if (value.length < 3) error = "Name too short.";
+        break;
+      case "dob":
+        const age = new Date().getFullYear() - new Date(value).getFullYear();
+        if (isNaN(age) || age < 18) error = "Must be 18+ years old.";
+        break;
+    }
+    setErrors(prev => ({ ...prev, [name]: error }));
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    validateField(name, value);
+  };
+
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editSpecialization, setEditSpecialization] = useState("");
@@ -99,18 +137,16 @@ const StaffDirectory: React.FC = () => {
       role: "Worker",
       specialization: "Pothole Maintenance",
     });
+    setErrors({ email: "", nic: "", phone: "", fullName: "", dob: "" });
   };
 
   const validateForm = () => {
-    const nicRegex = /^(?:\d{9}[Vv]|\d{12})$/;
-    const phoneRegex = /^(?:0|94|\+94)?7(0|1|2|4|5|6|7|8)\d{7}$/;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (formData.fullName.length < 3) return "Full Name must be at least 3 characters.";
-    if (!nicRegex.test(formData.nic)) return "Invalid NIC format.";
-    if (!emailRegex.test(formData.email)) return "Invalid email address.";
-    if (!phoneRegex.test(formData.phone)) return "Invalid Sri Lankan phone number.";
-    const age = new Date().getFullYear() - new Date(formData.dob).getFullYear();
-    if (age < 18 || isNaN(age)) return "Staff must be at least 18 years old.";
+    // Final check before submit (in case user skipped fields)
+    if (!formData.fullName || errors.fullName) return "Invalid Name.";
+    if (!formData.nic || errors.nic) return "Invalid NIC.";
+    if (!formData.email || errors.email) return "Invalid Email.";
+    if (!formData.phone || errors.phone) return "Invalid Phone.";
+    if (!formData.dob || errors.dob) return "Invalid Age.";
     return null;
   };
 
@@ -393,31 +429,36 @@ const StaffDirectory: React.FC = () => {
             <form onSubmit={handleRegister} className="grid grid-cols-2 gap-6">
               <div className="col-span-2">
                 <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Full Name</label>
-                <input required placeholder="Full Name" value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:border-black" />
+                <input required name="fullName" placeholder="Full Name" value={formData.fullName} onChange={handleChange} className={`w-full bg-slate-50 border ${errors.fullName ? 'border-red-500 focus:border-red-600' : 'border-slate-200 focus:border-black'} rounded-2xl px-5 py-4 outline-none transition-all`} />
+                {errors.fullName && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.fullName}</p>}
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">NIC Number</label>
-                <input required placeholder="NIC" value={formData.nic} onChange={(e) => setFormData({ ...formData, nic: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:border-black" />
+                <input required name="nic" placeholder="NIC" value={formData.nic} onChange={handleChange} className={`w-full bg-slate-50 border ${errors.nic ? 'border-red-500 focus:border-red-600' : 'border-slate-200 focus:border-black'} rounded-2xl px-5 py-4 outline-none transition-all`} />
+                {errors.nic && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.nic}</p>}
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Date of Birth</label>
-                <input type="date" required value={formData.dob} onChange={(e) => setFormData({ ...formData, dob: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:border-black" />
+                <input type="date" name="dob" required value={formData.dob} onChange={handleChange} className={`w-full bg-slate-50 border ${errors.dob ? 'border-red-500 focus:border-red-600' : 'border-slate-200 focus:border-black'} rounded-2xl px-5 py-4 outline-none transition-all`} />
+                {errors.dob && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.dob}</p>}
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Email</label>
-                <input type="email" required placeholder="Email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:border-black" />
+                <input type="email" name="email" required placeholder="Email" value={formData.email} onChange={handleChange} className={`w-full bg-slate-50 border ${errors.email ? 'border-red-500 focus:border-red-600' : 'border-slate-200 focus:border-black'} rounded-2xl px-5 py-4 outline-none transition-all`} />
+                {errors.email && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.email}</p>}
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Phone</label>
-                <input required placeholder="07XXXXXXXX" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:border-black" />
+                <input required name="phone" placeholder="07XXXXXXXX" value={formData.phone} onChange={handleChange} className={`w-full bg-slate-50 border ${errors.phone ? 'border-red-500 focus:border-red-600' : 'border-slate-200 focus:border-black'} rounded-2xl px-5 py-4 outline-none transition-all`} />
+                {errors.phone && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.phone}</p>}
               </div>
               <div className="col-span-2">
                 <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Address</label>
-                <textarea required rows={2} placeholder="Residential Address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:border-black resize-none" />
+                <textarea required name="address" rows={2} placeholder="Residential Address" value={formData.address} onChange={handleChange} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:border-black resize-none" />
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Role</label>
-                <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value as any })} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:border-black cursor-pointer">
+                <select name="role" value={formData.role} onChange={handleChange} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:border-black cursor-pointer">
                   <option value="Worker">Worker</option>
                   <option value="Supervisor">Supervisor</option>
                 </select>
@@ -430,7 +471,7 @@ const StaffDirectory: React.FC = () => {
               </div>
               <div className="col-span-2 grid grid-cols-2 gap-4 pt-4">
                 <button type="button" onClick={() => setIsRegisterOpen(false)} className="py-4 font-bold text-slate-400">Cancel</button>
-                <button type="submit" disabled={regLoading} className={btnBlack}>
+                <button type="submit" disabled={regLoading || Object.values(errors).some(e => e)} className={`disabled:opacity-50 disabled:cursor-not-allowed ${btnBlack}`}>
                   {regLoading ? "Onboarding..." : "Register"}
                 </button>
               </div>
